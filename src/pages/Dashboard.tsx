@@ -1,11 +1,12 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLocation } from '@/contexts/LocationContext';
 import LanguageSelector from '@/components/LanguageSelector';
+import LocationSelector from '@/components/LocationSelector';
 import { 
   Phone, 
   MessageSquare, 
@@ -19,13 +20,15 @@ import {
   Flame,
   Droplets,
   Sparkles,
-  Zap
+  Zap,
+  Siren
 } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isOnline] = useState(navigator.onLine);
   const { t } = useLanguage();
+  const { selectedLocation } = useLocation();
 
   const quickActions = [
     { 
@@ -85,8 +88,9 @@ const Dashboard = () => {
       <div className="bg-gradient-to-r from-green-600 to-green-700 text-white">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center">
-            <div className="flex justify-center mb-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-6">
               <LanguageSelector />
+              <LocationSelector />
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-4">
               {t('title')}
@@ -94,10 +98,16 @@ const Dashboard = () => {
             <p className="text-xl md:text-2xl mb-8 opacity-90">
               {t('subtitle')}
             </p>
+            {selectedLocation && (
+              <div className="flex items-center justify-center gap-2 mb-6 bg-white bg-opacity-20 rounded-lg px-4 py-2 inline-flex">
+                <MapPin className="h-4 w-4" />
+                <span className="text-sm">Location: {selectedLocation}</span>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg" 
-                className="bg-white text-green-600 hover:bg-gray-100 text-lg px-8 py-3 shadow-lg"
+                className="bg-white text-green-600 hover:bg-gray-100 text-lg px-8 py-3 shadow-lg transition-all duration-300 transform hover:scale-105"
                 onClick={() => navigate('/ai-assistant')}
               >
                 <Bot className="mr-2 h-5 w-5" />
@@ -105,11 +115,10 @@ const Dashboard = () => {
               </Button>
               <Button 
                 size="lg" 
-                variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-green-600 text-lg px-8 py-3"
+                className="bg-red-600 hover:bg-red-700 text-white text-lg px-8 py-3 shadow-lg transition-all duration-300 transform hover:scale-105"
                 onClick={() => navigate('/emergency')}
               >
-                <Phone className="mr-2 h-5 w-5" />
+                <Siren className="mr-2 h-5 w-5" />
                 {t('reportEmergency')}
               </Button>
             </div>
@@ -143,38 +152,43 @@ const Dashboard = () => {
 
         {/* Prominent AI Chatbot Feature */}
         <div className="mb-12">
-          <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-2xl border-0 hover:shadow-3xl transition-all duration-300">
+          <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-2xl border-0 hover:shadow-3xl transition-all duration-300 transform hover:scale-[1.02]">
             <CardContent className="p-8 text-center">
               <div className="flex justify-center mb-6">
-                <div className="bg-white bg-opacity-20 p-6 rounded-full">
-                  <Bot className="h-16 w-16" />
+                <div className="bg-white bg-opacity-20 p-6 rounded-full animate-pulse">
+                  <Bot className="h-20 w-20" />
                 </div>
               </div>
-              <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-2">
-                <Sparkles className="h-8 w-8" />
-                {t('aiAssistant')}
-                <Sparkles className="h-8 w-8" />
+              <h2 className="text-4xl font-bold mb-4 flex items-center justify-center gap-3">
+                <Sparkles className="h-10 w-10" />
+                🎙️ Voice-Enabled {t('aiAssistant')}
+                <Sparkles className="h-10 w-10" />
               </h2>
               <p className="text-xl mb-6 opacity-90">
-                {t('aiDescription')}
+                Speak or type in Hindi, Tamil, Telugu, Kannada, or English
               </p>
+              <div className="bg-white bg-opacity-10 rounded-lg p-4 mb-6">
+                <p className="text-lg font-medium">
+                  "मुझे मदद चाहिए" • "எனக்கு உதவி வேண்டும்" • "నాకు సహాయం కావాలి"
+                </p>
+              </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
                   size="lg" 
-                  className="bg-white text-green-600 hover:bg-gray-100 text-lg px-8 py-4 shadow-lg"
+                  className="bg-white text-green-600 hover:bg-gray-100 text-xl px-10 py-5 shadow-lg transition-all duration-300 transform hover:scale-105"
                   onClick={() => navigate('/ai-assistant')}
                 >
-                  <MessageSquare className="mr-2 h-6 w-6" />
-                  Start Chat Now
+                  <MessageSquare className="mr-3 h-7 w-7" />
+                  Start Voice Chat
                 </Button>
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-white text-white hover:bg-white hover:text-green-600 text-lg px-8 py-4"
+                  className="border-white text-white hover:bg-white hover:text-green-600 text-xl px-10 py-5 transition-all duration-300"
                   onClick={() => navigate('/ai-assistant', { state: { voiceMode: true } })}
                 >
-                  <Zap className="mr-2 h-6 w-6" />
-                  Voice Assistant
+                  <Zap className="mr-3 h-7 w-7" />
+                  Quick Voice Help
                 </Button>
               </div>
             </CardContent>
@@ -188,11 +202,11 @@ const Dashboard = () => {
             {quickActions.map((action, index) => (
               <Card 
                 key={index} 
-                className="hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105 border-green-200"
+                className="hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105 border-green-200 hover:border-green-400"
                 onClick={() => handleQuickAction(action.prompt)}
               >
                 <CardContent className="p-6 text-center">
-                  <div className={`${action.color} text-white p-4 rounded-full inline-flex mb-4`}>
+                  <div className={`${action.color} text-white p-4 rounded-full inline-flex mb-4 transition-all duration-300 hover:scale-110`}>
                     <action.icon className="h-8 w-8" />
                   </div>
                   <h3 className="font-semibold text-lg mb-2 text-green-800">{action.title}</h3>
@@ -208,7 +222,7 @@ const Dashboard = () => {
           <h2 className="text-3xl font-bold mb-6 text-center text-green-800">{t('keyFeatures')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow border-green-200">
+              <Card key={index} className="text-center hover:shadow-lg transition-shadow border-green-200 hover:border-green-400">
                 <CardHeader>
                   <feature.icon className={`h-12 w-12 mx-auto mb-4 ${feature.color}`} />
                   <CardTitle className="text-xl text-green-800">{feature.title}</CardTitle>
@@ -223,7 +237,7 @@ const Dashboard = () => {
 
         {/* Emergency Access */}
         <div className="text-center">
-          <Card className="bg-green-50 border-green-200 shadow-lg">
+          <Card className="bg-green-50 border-green-200 shadow-lg hover:shadow-xl transition-shadow">
             <CardContent className="p-8">
               <AlertTriangle className="h-16 w-16 text-green-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-green-800 mb-4">{t('emergencyCase')}</h3>
@@ -233,7 +247,7 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
                   size="lg" 
-                  className="bg-green-600 hover:bg-green-700 shadow-lg"
+                  className="bg-green-600 hover:bg-green-700 shadow-lg transition-all duration-300 transform hover:scale-105"
                   onClick={() => navigate('/emergency')}
                 >
                   <Phone className="mr-2 h-5 w-5" />
@@ -242,7 +256,7 @@ const Dashboard = () => {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-green-600 text-green-600 hover:bg-green-50"
+                  className="border-green-600 text-green-600 hover:bg-green-50 transition-all duration-300"
                   onClick={() => navigate('/ai-assistant')}
                 >
                   <MessageSquare className="mr-2 h-5 w-5" />

@@ -1,10 +1,11 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useLocation as useLocationContext } from '@/contexts/LocationContext';
 import { 
   Send, 
   Mic, 
@@ -17,7 +18,8 @@ import {
   Globe,
   MapPin,
   Wifi,
-  WifiOff
+  WifiOff,
+  Trash2
 } from 'lucide-react';
 
 interface Message {
@@ -31,16 +33,57 @@ interface Message {
 const AIAssistant = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, currentLanguage } = useLanguage();
+  const { selectedLocation } = useLocationContext();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('English');
   const [isOnline] = useState(navigator.onLine);
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const languages = ['English', 'हिंदी (Hindi)', 'ಕನ್ನಡ (Kannada)', 'தமிழ் (Tamil)', 'తెలుగు (Telugu)'];
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const speechRecognition = new SpeechRecognition();
+      
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+      speechRecognition.lang = getLanguageCode(currentLanguage);
+      
+      speechRecognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputText(transcript);
+        setIsListening(false);
+      };
+      
+      speechRecognition.onerror = () => {
+        setIsListening(false);
+      };
+      
+      speechRecognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      setRecognition(speechRecognition);
+    }
+  }, [currentLanguage]);
+
+  const getLanguageCode = (language: string): string => {
+    const langMap: { [key: string]: string } = {
+      'English': 'en-IN',
+      'हिंदी (Hindi)': 'hi-IN',
+      'ಕನ್ನಡ (Kannada)': 'kn-IN',
+      'தமிழ் (Tamil)': 'ta-IN',
+      'తెలుగు (Telugu)': 'te-IN'
+    };
+    return langMap[language] || 'en-IN';
+  };
 
   // Initialize with welcome message and handle initial prompt
   useEffect(() => {
@@ -49,7 +92,7 @@ const AIAssistant = () => {
     const welcomeMessage: Message = {
       id: '1',
       type: 'bot',
-      content: `🙏 Namaste! I'm CIVI-SHIELD AI Assistant. I'm here to help you with emergencies, first aid, legal rights, and safety information. I can understand and respond in multiple Indian languages. How can I assist you today?`,
+      content: `🙏 Namaste! I'm ${t('appName')} Assistant. I can help you with emergencies, first aid, legal rights, and safety information in multiple Indian languages. ${selectedLocation ? `I see you're in ${selectedLocation}.` : ''} How can I assist you today?`,
       timestamp: new Date(),
       agent: 'General'
     };
@@ -59,7 +102,7 @@ const AIAssistant = () => {
     if (initialPrompt) {
       handleSendMessage(initialPrompt);
     }
-  }, [location.state]);
+  }, [location.state, selectedLocation, t]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -260,23 +303,47 @@ What do you need help with today?`
       setMessages(prev => [...prev, botMessage]);
       setIsLoading(false);
       
-      // Simulate text-to-speech
-      if ('speechSynthesis' in window && isSpeaking) {
-        const utterance = new SpeechSynthesisUtterance(response.replace(/[🔥🩹🐍👮‍♂️🛡️📞🚨🚒🏥👩👶🌊⚡🔍🚫🤖]/g, ''));
-        speechSynthesis.speak(utterance);
-      }
+      // Speak the response
+      speakText(response);
     }, 1500);
   };
 
-  const toggleListening = () => {
-    setIsListening(!isListening);
-    // In a real implementation, this would start/stop speech recognition
-    if (!isListening) {
-      setTimeout(() => {
-        setIsListening(false);
-        setInputText("I heard your voice input (demo)");
-      }, 3000);
+  const speakText = (text: string) => {
+    if ('speechSynthesis' in window && isSpeaking) {
+      speechSynthesis.cancel(); // Stop any ongoing speech
+      
+      const utterance = new SpeechSynthesisUtterance(text.replace(/[🔥🩹🐍👮‍♂️🛡️📞🚨🚒🏥👩👶🌊⚡🔍🚫🤖]/g, ''));
+      utterance.lang = getLanguageCode(currentLanguage);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      
+      speechSynthesis.speak(utterance);
     }
+  };
+
+  const toggleListening = () => {
+    if (!recognition) {
+      alert('Speech recognition not supported in this browser');
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
+  };
+
+  const clearChat = () => {
+    setMessages([{
+      id: '1',
+      type: 'bot',
+      content: `Chat cleared! How can I help you today?`,
+      timestamp: new Date(),
+      agent: 'General'
+    }]);
   };
 
   const quickResponses = [
@@ -288,7 +355,7 @@ What do you need help with today?`
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
@@ -298,21 +365,23 @@ What do you need help with today?`
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-2">
-                <Bot className="h-6 w-6 text-blue-600" />
-                <h1 className="text-xl font-bold">CIVI-SHIELD AI</h1>
+                <Bot className="h-6 w-6 text-green-600" />
+                <h1 className="text-xl font-bold">{t('appName')}</h1>
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              <select 
-                value={currentLanguage}
-                onChange={(e) => setCurrentLanguage(e.target.value)}
-                className="text-sm border rounded px-2 py-1"
-              >
-                {languages.map(lang => (
-                  <option key={lang} value={lang}>{lang}</option>
-                ))}
-              </select>
+            <div className="flex items-center gap-4">
+              {selectedLocation && (
+                <div className="flex items-center gap-1 text-sm text-gray-600 bg-green-50 px-2 py-1 rounded">
+                  <MapPin className="h-3 w-3" />
+                  <span>{selectedLocation}</span>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-1 text-sm text-gray-600 bg-blue-50 px-2 py-1 rounded">
+                <Globe className="h-3 w-3" />
+                <span>{currentLanguage}</span>
+              </div>
               
               <div className="flex items-center gap-1">
                 {isOnline ? (
@@ -320,7 +389,6 @@ What do you need help with today?`
                 ) : (
                   <WifiOff className="h-4 w-4 text-orange-600" />
                 )}
-                <MapPin className="h-4 w-4 text-blue-600" />
               </div>
             </div>
           </div>
@@ -334,7 +402,7 @@ What do you need help with today?`
             <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  message.type === 'user' ? 'bg-blue-600' : 'bg-green-600'
+                  message.type === 'user' ? 'bg-green-600' : 'bg-blue-600'
                 }`}>
                   {message.type === 'user' ? 
                     <User className="h-4 w-4 text-white" /> : 
@@ -342,15 +410,15 @@ What do you need help with today?`
                   }
                 </div>
                 
-                <Card className={`${message.type === 'user' ? 'bg-blue-600 text-white' : 'bg-white'}`}>
+                <Card className={`${message.type === 'user' ? 'bg-green-600 text-white' : 'bg-white border-green-200'}`}>
                   <CardContent className="p-4">
                     {message.agent && (
-                      <Badge variant="outline" className="mb-2 text-xs">
+                      <Badge variant="outline" className="mb-2 text-xs bg-green-100 text-green-800">
                         {message.agent} Agent
                       </Badge>
                     )}
                     <div className="whitespace-pre-wrap">{message.content}</div>
-                    <div className={`text-xs mt-2 ${message.type === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                    <div className={`text-xs mt-2 ${message.type === 'user' ? 'text-green-100' : 'text-gray-500'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </div>
                   </CardContent>
@@ -362,15 +430,15 @@ What do you need help with today?`
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
                   <Bot className="h-4 w-4 text-white" />
                 </div>
-                <Card className="bg-white">
+                <Card className="bg-white border-green-200">
                   <CardContent className="p-4">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                     </div>
                   </CardContent>
                 </Card>
@@ -391,7 +459,7 @@ What do you need help with today?`
                 key={index}
                 variant="outline"
                 size="sm"
-                className="whitespace-nowrap"
+                className="whitespace-nowrap border-green-300 text-green-700 hover:bg-green-50"
                 onClick={() => handleSendMessage(response)}
               >
                 {response}
@@ -404,23 +472,35 @@ What do you need help with today?`
       {/* Input */}
       <div className="bg-white border-t p-4">
         <div className="max-w-4xl mx-auto">
+          <div className="flex gap-2 mb-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={clearChat}
+              className="border-gray-300 text-gray-600 hover:bg-gray-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Clear Chat
+            </Button>
+          </div>
+          
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Input
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder={`Type your message in ${currentLanguage}...`}
+                placeholder={`Speak or type in ${currentLanguage}...`}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="pr-12"
+                className="pr-12 border-green-200 focus:ring-green-500"
               />
               <Button
                 size="sm"
                 variant="ghost"
-                className="absolute right-1 top-1 h-8 w-8 p-0"
+                className={`absolute right-1 top-1 h-8 w-8 p-0 ${isListening ? 'text-red-600 animate-pulse' : 'text-green-600'}`}
                 onClick={toggleListening}
               >
                 {isListening ? 
-                  <MicOff className="h-4 w-4 text-red-600" /> : 
+                  <MicOff className="h-4 w-4" /> : 
                   <Mic className="h-4 w-4" />
                 }
               </Button>
@@ -430,12 +510,16 @@ What do you need help with today?`
               variant="ghost"
               size="sm"
               onClick={() => setIsSpeaking(!isSpeaking)}
-              className={isSpeaking ? 'text-blue-600' : ''}
+              className={`${isSpeaking ? 'text-green-600 bg-green-50' : 'text-gray-600'}`}
             >
               {isSpeaking ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </Button>
             
-            <Button onClick={() => handleSendMessage()} disabled={!inputText.trim()}>
+            <Button 
+              onClick={() => handleSendMessage()} 
+              disabled={!inputText.trim()}
+              className="bg-green-600 hover:bg-green-700"
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>
