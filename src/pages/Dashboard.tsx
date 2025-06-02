@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import {
   Heart,
   Shield,
   AlertTriangle,
-  Fire,
+  Flame,
   Droplets,
   Hospital,
   Users
@@ -26,7 +25,7 @@ const Dashboard = () => {
 
   const quickActions = [
     { 
-      icon: Fire, 
+      icon: Flame, 
       title: "Fire Emergency", 
       prompt: "What to do in a house fire?",
       color: "bg-orange-500 hover:bg-orange-600"
