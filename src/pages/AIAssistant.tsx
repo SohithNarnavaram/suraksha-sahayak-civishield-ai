@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,15 +49,15 @@ const AIAssistant = () => {
 
   // Initialize speech recognition
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const speechRecognition = new SpeechRecognition();
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const speechRecognition = new SpeechRecognitionConstructor();
       
       speechRecognition.continuous = false;
       speechRecognition.interimResults = false;
       speechRecognition.lang = getLanguageCode(currentLanguage);
       
-      speechRecognition.onresult = (event: any) => {
+      speechRecognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         setInputText(transcript);
         setIsListening(false);
