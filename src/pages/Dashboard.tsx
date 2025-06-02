@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useLocation } from '@/contexts/LocationContext';
 import LanguageSelector from '@/components/LanguageSelector';
 import LocationSelector from '@/components/LocationSelector';
+import EmergencyHeadlines from '@/components/EmergencyHeadlines';
 import { 
   Phone, 
   MessageSquare, 
@@ -99,9 +101,9 @@ const Dashboard = () => {
               {t('subtitle')}
             </p>
             {selectedLocation && (
-              <div className="flex items-center justify-center gap-2 mb-6 bg-white bg-opacity-20 rounded-lg px-4 py-2 inline-flex">
-                <MapPin className="h-4 w-4" />
-                <span className="text-sm">Location: {selectedLocation}</span>
+              <div className="flex items-center justify-center gap-2 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg px-6 py-3 inline-flex shadow-lg">
+                <MapPin className="h-5 w-5 text-white" />
+                <span className="text-white font-semibold">Location: {selectedLocation}</span>
               </div>
             )}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -127,6 +129,9 @@ const Dashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 py-12">
+        {/* Emergency Headlines Banner */}
+        <EmergencyHeadlines />
+
         {/* Status Bar */}
         <div className="mb-8">
           <Card className="border-l-4 border-l-green-500 shadow-md">
